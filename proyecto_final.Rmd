@@ -40,22 +40,23 @@ library(DBI)
 library(dbplyr)
 library(RSQLite)
 library(visdat) #Ver datos faltantes en un df
+library(lubridate)
 
 
 
 # Rutas que vamos a trabajar, cada quien tendra una ruta diferente
 
-#setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
+setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
 #setwd("C:/Users/diego/Documents/Ingeniería_Ambiental/Diplomado/Modulo_1/Proyecto_M1_P1/colaboracion-git-equipo-11/Data")
-setwd("/Users/bryantcanseco/Desktop/UNAM/Diplomados/Ciencia de Datos- UNAM/diplo-modulo2-equipo-11/Data")
+#setwd("/Users/bryantcanseco/Desktop/UNAM/Diplomados/Ciencia de Datos- UNAM/diplo-modulo2-equipo-11/Data")
 
 ```
 
 
 
 ```{r Data}
-#setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
-setwd("/Users/bryantcanseco/Desktop/UNAM/Diplomados/Ciencia de Datos- UNAM/diplo-modulo2-equipo-11/Data")
+setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
+#setwd("/Users/bryantcanseco/Desktop/UNAM/Diplomados/Ciencia de Datos- UNAM/diplo-modulo2-equipo-11/Data")
 conn <- DBI::dbConnect(RSQLite::SQLite(), "vuelos.db")
 
 ```
@@ -74,40 +75,6 @@ vuelos <- dbReadTable(conn, "vuelos")
 
 
 ```
-
-```{r}
-# AEROLINEAS
-head(aerolineas)
-summary(aerolineas)
-```
-
-
-
-
-```{r}
-# AEROPUERTOS
-head(aeropuertos)
-summary(aeropuertos)
-```
-
-```{r}
-# AVIONES
-head(aviones)
-summary(aviones)
-```
-
-```{r}
-# CLIMA
-head(clima)
-summary(clima)
-```
-
-```{r}
-# VUELOS
-head(vuelos)
-summary(vuelos)
-```
-
 
 
 
@@ -226,7 +193,199 @@ vis_miss(vuelos_muestra)
 ```
 
 
+
+
 # Vuelos de NYC
+
+
+```{r, echo=FALSE}
+# Utilizaremos las tablas de la base de datos vuelos.db que incluye información de:
+# 
+# - flights: Detalles de todos los vuelos que salieron de NYC (JFK, LGA, EWR) en 2013.
+# - airlines: Códigos y nombres de aerolíneas.
+# - airports: Información sobre aeropuertos, incluyendo ubicación.
+# - planes: Datos sobre aeronaves, incluyendo año de fabricación.
+# - weather: Datos meteorológicos por hora para los aeropuertos de NYC.
+
+head(aeropuertos)
+head(aerolineas)
+head(aviones)
+head(clima)
+head(vuelos)
+
+
+```
+
+
+
+```{r, echo=TRUE}
+# ¿Qué aerolínea tuvo el mayor retraso promedio en la salida en 2013?
+
+vuelos |> 
+  filter(year == 2013) |>
+  group_by(carrier) |> 
+  summarise(retraso_promedio = mean(dep_delay, na.rm = TRUE)) |>
+  arrange(desc(retraso_promedio)) 
+
+
+aerolineas |> 
+  filter(carrier == "F9") |> 
+  select(name)
+
+```
+
+**¿Qué aerolínea tuvo el mayor retraso promedio en la salida en 2013?** 
+
+La aerolínea Frontier Airlines (F9) tuvo el mayor retraso promedio en la salida en 2013, con un retraso promedio de 20.21 minutos.
+
+```{r, echo=TRUE}
+# ¿Qué día de la semana tuvo más vuelos retrasados en promedio?
+
+vuelos <- vuelos %>% #Modificando los datos de vuelo 
+  mutate(fecha = make_date(year, month, day),
+         dia_semana = wday(fecha, label = TRUE, abbr = TRUE))
+
+vuelos %>%
+  group_by(dia_semana) %>% #Agrupando por dia de la semana y sacando promedio 
+  summarise(retraso_promedio = mean(dep_delay, na.rm = TRUE)) %>%
+  arrange(desc(retraso_promedio))
+
+
+```
+
+**¿Qué día de la semana tuvo más vuelos retrasados en promedio?**
+
+La aerolinea con mas retrasos en promedio fue el Jueves, con un retraso promedio de 16.149 
+
+```{r, echo=TRUE}
+# ¿Cuál es la distribución de los retrasos en la salida para cada aeropuerto?
+
+vuelos |> group_by(origin) %>% # Agrupando por aeropuerto de origen
+  summarise(retraso_promedio = mean(dep_delay, na.rm = TRUE)) %>%
+  arrange(desc(retraso_promedio))
+
+
+```
+ ¿Cuál es la distribución de los retrasos en la salida para cada aeropuerto?
+ 
+ El aeropuerto con mayor retraso es el EWR, con un retraso en promedio de 15.10 minutos
+ 
+```{r, echo=TRUE}
+# ¿Qué proporción de vuelos se retrasaron más de 30 minutos?
+
+vuelos |> 
+  filter(dep_delay > 30) |> 
+  summarise(proporcion_retraso = n() / nrow(vuelos)) |> 
+  mutate(proporcion_retraso = round(proporcion_retraso * 100, 2))
+```
+**¿Qué proporción de vuelos se retrasaron más de 30 minutos?**
+
+La proporcion o la probabilidad de que un vuelo se retrase mas de 30 minutos es de 14.34%
+
+```{r, echo=TRUE}
+# ¿Qué destinos tuvieron los mayores retrasos promedio en la llegada?
+
+vuelos |> group_by(dest) %>% # Agrupando por aeropuerto de origen
+  summarise(retraso_promedio = mean(arr_delay, na.rm = TRUE)) %>% #Retraso en llegada
+  arrange(desc(retraso_promedio))
+
+
+aeropuertos |> 
+  filter(faa == "CAE") |> 
+  select(name)
+```
+**¿Qué destinos tuvieron los mayores retrasos promedio en la llegada?**
+
+El aeropuerto con mayor retraso en la llegada es el CAE (Columbia Metropolitan), con un retraso promedio de 41.76 minutos.
+
+
+
+```{r}
+head(aeropuertos)
+head(aerolineas)
+head(aviones)
+head(clima)
+head(vuelos)
+```
+
+
+
+```{r, echo=TRUE}
+# ¿Qué aerolíneas tuvieron el mayor número de vuelos desde NYC?
+vuelos |> 
+  filter(origin == c("JFK", "LGA", "EWR")) |>
+  group_by(carrier) |>
+  summarise(num_vuelos = n()) |>
+  arrange(desc(num_vuelos)) 
+
+
+aerolineas |> 
+  filter(carrier == "UA") |> 
+  select(name)
+
+```
+
+**¿Qué aerolíneas tuvieron el mayor número de vuelos desde NYC?**
+
+La aerolínea United Airlines (UA) tuvo el mayor número de vuelos desde NYC, con un total de 19,487 vuelos.
+
+
+```{r, echo=TRUE}
+# ¿Cómo varía el retraso de los vuelos según el fabricante de la aeronave?
+```
+
+```{r, echo=TRUE}
+# ¿Los aviones más antiguos tienen más retrasos?
+```
+
+```{r, echo=TRUE}
+# ¿Qué modelos de aviones se utilizan con mayor frecuencia en vuelos desde NYC?
+```
+
+```{r, echo=TRUE}
+# ¿Cuál es la distancia promedio de vuelo por aerolínea?
+```
+
+```{r, echo=TRUE}
+# ¿Qué aeropuerto de NYC tuvo el mayor número de retrasos en la salida?
+```
+
+```{r, echo=TRUE}
+# ¿Qué aeropuerto tuvo el menor tiempo promedio de taxi-out?
+```
+
+```{r, echo=TRUE}
+# ¿Qué porcentaje de vuelos que salen de cada aeropuerto de NYC fueron puntuales?
+```
+
+```{r, echo=TRUE}
+# ¿Qué aeropuertos de destino tienen el mayor retraso promedio en la llegada para vuelos desde NYC?
+```
+
+```{r, echo=TRUE}
+# ¿Cómo varían los retrasos en la salida según la hora del día en cada aeropuerto de NYC?
+```
+
+```{r, echo=TRUE}
+# ¿Cuál es la correlación entre la velocidad del viento y los retrasos en la salida?
+```
+
+```{r, echo=TRUE}
+# ¿Los vuelos experimentan más retrasos en días con lluvias intensas?
+```
+
+```{r, echo=TRUE}
+# ¿Cómo afecta la temperatura a los retrasos de los vuelos?
+```
+
+```{r, echo=TRUE}
+# ¿Cómo afectan los niveles de visibilidad a los retrasos en la llegada?
+```
+
+```{r, echo=TRUE}
+# ¿La alta humedad se relaciona de alguna manera con los tiempos de taxi-out más largos?
+```
+
 
 
 
@@ -566,6 +725,8 @@ Se observa claramente que la especie Arabica domina la muestra, tanto en cantida
 Aunque la especie Robusta está subrepresentada en la base de datos, su comportamiento es visiblemente diferente: menor variabilidad y puntuaciones más concentradas.
 
 El patrón de distribuciones normales truncadas sugiere una buena homogeneidad de los datos sensoriales, al menos para la especie Arabica.
+
+
 
 
 # Analizando letras de canciones
