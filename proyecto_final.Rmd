@@ -300,13 +300,6 @@ El aeropuerto con mayor retraso en la llegada es el CAE (Columbia Metropolitan),
 
 
 
-```{r}
-head(aeropuertos)
-head(aerolineas)
-head(aviones)
-head(clima)
-head(vuelos)
-```
 
 
 
@@ -330,41 +323,181 @@ aerolineas |>
 La aerolínea United Airlines (UA) tuvo el mayor número de vuelos desde NYC, con un total de 19,487 vuelos.
 
 
+
+
 ```{r, echo=TRUE}
 # ¿Cómo varía el retraso de los vuelos según el fabricante de la aeronave?
+
+vuelos |>
+  left_join(aviones, by = "tailnum") |>
+  group_by(manufacturer) |>
+  summarise(retraso_promedio = mean(dep_delay, na.rm = TRUE)) |>
+  arrange(desc(retraso_promedio)) 
+
+
 ```
+
+
+**¿Cómo varía el retraso de los vuelos según el fabricante de la aeronave?**
+El fabricante de aeronaves con mayor retraso promedio en la salida es AGUSTA SPA , con un retraso promedio de 32.45 minutos.
 
 ```{r, echo=TRUE}
 # ¿Los aviones más antiguos tienen más retrasos?
+
+vuelos |>
+  left_join(aviones, by = "tailnum") |>
+  group_by(year.y) |>
+   summarise(retraso_promedio = mean(dep_delay, na.rm = TRUE)) |>
+  arrange(desc(retraso_promedio)) 
+
+
+aviones |> arrange(year) |> 
+  select(year) |> 
+  head(10)
+
+
+  
 ```
+
+**¿Los aviones más antiguos tienen más retrasos?**
+
+No, aunque los avinoes con mas retraso son del año 1972 y 1978, tambien los aviones con menos retrason son del año 1965 y 1977, por lo que al parecer la antiguiedad del avion, no se ve reflejado en el retraso de los aviones 
 
 ```{r, echo=TRUE}
 # ¿Qué modelos de aviones se utilizan con mayor frecuencia en vuelos desde NYC?
+
+vuelos |>
+  left_join(aviones, by = "tailnum") |>
+   filter(origin == c("JFK", "LGA", "EWR"), !is.na(model)) |>
+   group_by(model) |>
+   summarise(num_vuelos = n()) |>
+   arrange(desc(num_vuelos))
+  
+
 ```
+
+**¿Qué modelos de aviones se utilizan con mayor frecuencia en vuelos desde NYC?**
+
+Los modelos que mas se usan en los aeropuertos de NYC son:
+
+- A320-232 con un total de 15,194	 vuelos
+- EMB-145LR con un total de 9,448 vuelos
+- ERJ 190-100 IGW con un total de 7,948 vuelos
+
+
+
+
+**¿Cuál es la distancia promedio de vuelo por aerolínea?**
+
+El promedio de distancia de vuelo por aerolínea es el siguiente:
 
 ```{r, echo=TRUE}
 # ¿Cuál es la distancia promedio de vuelo por aerolínea?
+
+vuelos |>
+  left_join(aerolineas, by = "carrier") |>
+  group_by(name) |>
+  summarise(distancia_promedio = mean(distance, na.rm = TRUE)) |>
+  arrange(desc(distancia_promedio)) |>
+  knitr::kable(digits = 2, caption = "Distancia promedio de vuelo por aerolínea")
+
+
+
+
+
+
 ```
 
 ```{r, echo=TRUE}
 # ¿Qué aeropuerto de NYC tuvo el mayor número de retrasos en la salida?
+
+vuelos |>
+  filter(origin %in% c("JFK", "LGA", "EWR")) |>
+  group_by(origin) |>
+  summarise(num_retrasos = sum(dep_delay > 0, na.rm = TRUE)) |>
+  arrange(desc(num_retrasos)) 
+
 ```
+**¿Qué aeropuerto de NYC tuvo el mayor número de retrasos en la salida?**
+
+El aeropuerto de NYC con el mayor número de retrasos en la salida es el EWR	, con un total de 52,711 retrasos.
+
+
 
 ```{r, echo=TRUE}
 # ¿Qué aeropuerto tuvo el menor tiempo promedio de taxi-out?
+
+vuelos |>
+  group_by(origin) |>
+  summarise(tiempo_promedio_taxi_out = mean(dep_delay, na.rm = TRUE)) |>
+  arrange(tiempo_promedio_taxi_out)
+
+
 ```
+**¿Qué aeropuerto tuvo el menor tiempo promedio de taxi-out?**
+
+El aeropuerto con el menor tiempo promedio de taxi-out es el LGA, con un tiempo promedio de 10.34 minutos.
+
+
+**¿Qué porcentaje de vuelos que salen de cada aeropuerto de NYC fueron puntuales?**
+
+El porcentaje de vuelos puntuales que salen de cada aeropuerto de NYC es el siguiente:
 
 ```{r, echo=TRUE}
 # ¿Qué porcentaje de vuelos que salen de cada aeropuerto de NYC fueron puntuales?
+
+vuelos |>
+  group_by(origin) |>
+  summarise(pocentaje_puntualidad = sum(dep_delay == 0, na.rm = TRUE) / n() * 100) |>
+   knitr::kable(digits = 2, caption = "Porcentaje de vuelos que salen a tiempo")
+
 ```
+
+Podemos observar que el porcentajes de vuelo en todos los aeropuertos es muy bajo, lo que puede indicar una saturacion en los aeropuertos de NYC.
+
+**¿Qué aeropuertos de destino tienen el mayor retraso promedio en la llegada para vuelos desde NYC?**
+
+Lista de los 10 aeropuertos con el mayor retraso promedio de llegada para vuelos desde NYC:
 
 ```{r, echo=TRUE}
 # ¿Qué aeropuertos de destino tienen el mayor retraso promedio en la llegada para vuelos desde NYC?
+vuelos |>
+  filter(origin %in% c("JFK", "LGA", "EWR")) |>
+  left_join(aeropuertos, by = c("dest" = "faa")) |>
+  group_by(name) |>
+  summarise(retraso_promedio = mean(arr_delay, na.rm = TRUE)) |>
+  arrange(desc(retraso_promedio)) |> head(10) |>
+  knitr::kable(digits = 2, caption = "Retrasos promedio de llegada por aeropuerto de destino")
+
+
 ```
+
+
+```{r}
+head(aeropuertos)
+head(aerolineas)
+head(aviones)
+head(clima)
+head(vuelos)
+```
+
+
+
+**¿Cómo varían los retrasos en la salida según la hora del día en cada aeropuerto de NYC?**
+
+Tabla con 10 elementos con los retrasos promedio en la salida según la hora del día en cada aeropuerto de NYC
 
 ```{r, echo=TRUE}
 # ¿Cómo varían los retrasos en la salida según la hora del día en cada aeropuerto de NYC?
+
+vuelos |>
+  filter(origin %in% c("JFK", "LGA", "EWR")) |>
+  group_by(hour) |>
+  summarise(retraso_promedio = mean(dep_delay, na.rm = TRUE)) |> 
+  arrange(desc(retraso_promedio)) |> head(10) |>
+   knitr::kable(digits = 2, caption = "Retrasos por hora")
 ```
+
 
 ```{r, echo=TRUE}
 # ¿Cuál es la correlación entre la velocidad del viento y los retrasos en la salida?
