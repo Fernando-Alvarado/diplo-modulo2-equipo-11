@@ -5,15 +5,14 @@ output: html_document
 ---
 # Integrantes:
 
-+ Integrante 1. Rol: Administrador
-+ Integrante 2. Rol: Colaborador 1
++ Gomez Santiago Diego Rol: Administrador
++ Bryant Canseco Hernandez Rol: Colaborador 1
 + Alvarado Palacios Fernando  Rol: Colaborador 2
 
 
 
 ```{r setup, include=FALSE}
 # Empezamos limpiando nuestro ambiente
-rm(list = ls(all.names = TRUE))
 
 
 # Configuración global de los bloques de código (chunk's)
@@ -40,6 +39,7 @@ library(patchwork) #Orden de las librerias
 library(DBI)
 library(dbplyr)
 library(RSQLite)
+library(visdat) #Ver datos faltantes en un df
 
 
 
@@ -54,9 +54,156 @@ setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data
 
 
 ```{r Data}
-
+setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
 conn <- DBI::dbConnect(RSQLite::SQLite(), "vuelos.db")
 
+```
+
+```{r ExploracionBaseDatos}
+
+dbListTables(conn)
+
+# Leyendo nuestras tablas como datafrmaes, para poder trabajar mejor con ellos
+aerolineas <- dbReadTable(conn, "aerolineas")
+aeropuertos <- dbReadTable(conn, "aeropuertos")
+aviones <- dbReadTable(conn, "aviones")
+clima <- dbReadTable(conn, "clima")
+vuelos <- dbReadTable(conn, "vuelos")
+
+
+```
+
+```{r}
+# AEROLINEAS
+head(aerolineas)
+summary(aerolineas)
+```
+
+
+
+
+```{r}
+# AEROPUERTOS
+head(aeropuertos)
+summary(aeropuertos)
+```
+
+```{r}
+# AVIONES
+head(aviones)
+summary(aviones)
+```
+
+```{r}
+# CLIMA
+head(clima)
+summary(clima)
+```
+
+```{r}
+# VUELOS
+head(vuelos)
+summary(vuelos)
+```
+
+
+
+
+Haciendo una analisis preliminar de los datos, podemos ver que tenemos 5 tablas en nuestra base de datos, aerolineas, aeropuertos, aviones, clima y vuelos.
+En donde:
+
+
+La tabla `airlines` contiene información sobre las aerolíneas,  donde:
+
+- **carrier**: Abreviación o código de la aerolínea.
+- **name**: Nombre completo de la aerolínea.
+
+La tabla `aeropuertos` contiene información de diferentes aeropuertos, donde:
+
+- **faa**: Código identificador del aeropuerto.
+- **name**: Nombre del aeropuerto.
+- **lat**: Latitud del aeropuerto.
+- **lon**: Longitud del aeropuerto.
+- **alt**: Altitud sobre el nivel del mar (en pies).
+- **tz**: Zona horaria numérica respecto a UTC.
+- **dst**: Estado del horario de verano (A = activo).
+- **tzone**: Zona horaria en formato texto (por ejemplo, "America/New_York").
+
+
+La tabla `planes` describe las características de los aviones, donde:
+
+- **tailnum**: Matrícula del avión.
+- **year**: Año de fabricación.
+- **type**: Tipo de aeronave.
+- **manufacturer**: Fabricante del avión.
+- **model**: Modelo del avión.
+- **engines**: Número de motores.
+- **seats**: Número de asientos disponibles.
+- **speed**: Velocidad (puede contener valores NA).
+- **engine**: Tipo de motor (por ejemplo, Turbo-fan).
+
+La tabla `clima` contiene datos meteorológicos por hora en los aeropuertos, donde:
+
+- **origin**: Código del aeropuerto.
+- **year, month, day, hour**: Fecha y hora de la medición.
+- **temp**: Temperatura (°F).
+- **dewp**: Punto de rocío (°F).
+- **humid**: Humedad relativa (%).
+- **wind_dir**: Dirección del viento (en grados).
+- **wind_speed**: Velocidad del viento (mph).
+- **wind_gust**: Ráfaga máxima de viento (mph).
+- **precip**: Precipitación (pulgadas).
+- **pressure**: Presión atmosférica (milibares).
+- **visib**: Visibilidad (millas).
+- **time_hour**: Fecha y hora unificadas como objeto POSIXct.
+
+
+La tabla `vuelos` contiene datos sobre más de 300,000 vuelos desde NYC en el año 2013. Las variables principales incluyen:
+
+- **year, month, day**: Año, mes y día del vuelo.
+- **dep_time**: Hora real de salida (formato HHMM).
+- **sched_dep_time**: Hora programada de salida.
+- **dep_delay**: Retraso en la salida (en minutos).
+- **arr_time**: Hora real de llegada.
+- **sched_arr_time**: Hora programada de llegada.
+- **arr_delay**: Retraso en la llegada (en minutos).
+- **carrier**: Código de la aerolínea (relacionado con `airlines`).
+- **flight**: Número del vuelo.
+- **tailnum**: Matrícula del avión (relacionado con `planes`).
+- **origin**: Aeropuerto de origen.
+- **dest**: Aeropuerto de destino.
+- **air_time**: Tiempo de vuelo (en minutos).
+- **distance**: Distancia recorrida (en millas).
+- **hour, minute**: Hora y minuto extraídos de la hora programada.
+- **time_hour**: Marca temporal POSIXct que representa la hora del vuelo.
+
+
+
+## Usando visadat para ver los datos perdidos
+
+
+```{r}
+# AEROLINEAS: estructura y valores faltantes
+vis_dat(aerolineas)
+vis_miss(aerolineas)
+```
+
+```{r}
+# AEROPUERTOS: estructura y valores faltantes
+vis_dat(aeropuertos)
+vis_miss(aeropuertos)
+```
+
+```{r}
+# AVIONES: estructura y valores faltantes
+vis_dat(aviones)
+vis_miss(aviones)
+```
+
+```{r}
+# CLIMA: estructura y valores faltantes
+vis_dat(clima)
+vis_miss(clima)
 ```
 
 
@@ -64,16 +211,89 @@ conn <- DBI::dbConnect(RSQLite::SQLite(), "vuelos.db")
 
 
 
+Para trabajar con los datos de vuelos haremos un muestro ya que tenemos demasiados datos, tenemos `r length(vuelos$day) ` y la funcion `vis_dat` no puede con tanto, por lo que tomaremos una muestra de 10,000 filas para trabajar.
+
+
+```{r}
+# VUELOS: estructura y valores faltantes
+
+vuelos_muestra <- slice_sample(vuelos, n = 5000)
+
+vis_dat(vuelos_muestra)
+vis_miss(vuelos_muestra)
+```
+
+
+# Vuelos de NYC
 
 
 
 
 
+# Calidad del café
+
+Fernando 
+
+
+```{r}
+# ACTIVIDAD 0: Análisis de valores faltantes
+# Visualizar estructura de datos y valores NA usando vis_dat() y vis_miss()
+```
+
+```{r}
+# ACTIVIDAD 1: Crear columna color2 basada en los valores de color
+# Asignar NA, "#00FF66", "#CCEBC5" o "#BFFFFF" según corresponda
+```
+
+```{r}
+# ACTIVIDAD 2: Crear columna bag_weight2 a partir de bag_weight
+# Extraer número y convertir a numérico. Contar valores ambiguos (NA)
+```
+
+```{r}
+# ACTIVIDAD 3: Crear columnas method1 y method2 desde processing_method
+# Separar por "/" y contar observaciones con ambigüedad
+```
+
+```{r}
+# ACTIVIDAD 4: Separar columna expiration en expiration_day, expiration_month y expiration_year
+# Contar observaciones con separación ambigua o incompleta
+```
+
+```{r}
+# ACTIVIDAD 5: Separar columna harvest_year en harvest_mes y harvest_anio
+# Contar observaciones con separación ambigua o incompleta
+```
+
+```{r}
+# ACTIVIDAD 6: Visualización de total_cup_points, acidity y color2
+# Se deben representar visualmente los colores: "#00FF66", "#CCEBC5", "#BFFFFF"
+```
+
+```{r}
+# ACTIVIDAD 7: Visualización de densidad de bag_weight2 por species
+# Se espera una gráfica con diferentes curvas de densidad para cada especie
+```
+
+```{r}
+# ACTIVIDAD 8: Visualización de total_cup_points vs expiración (año/mes)
+# Considerar sólo granos de México, Brasil, Colombia y Guatemala
+```
+
+```{r}
+# ACTIVIDAD 9: Visualización del mes de expiración vs altitudes
+# Incluir altitude_mean_meters, altitude_low_meters y altitude_high_meters
+# Filtrar solo años de expiración 2016 y 2017 y países: México, Brasil, Colombia y Guatemala
+```
+
+```{r}
+# ACTIVIDAD 10: Visualización conjunta de aftertaste, acidity, body y species
+# Deben representarse en un solo gráfico con formato publicable
+```
 
 
 
-
-
+# Analizando letras de canciones
 
 
 
