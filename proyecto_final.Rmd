@@ -1,4 +1,4 @@
----
+43---
 title: "Proyecto final módulo 2"
 author: "Equipo - 11"
 output: html_document
@@ -45,19 +45,21 @@ library(visdat) #Ver datos faltantes en un df
 
 # Rutas que vamos a trabajar, cada quien tendra una ruta diferente
 
-setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
+#setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
 #setwd("C:/Users/diego/Documents/Ingeniería_Ambiental/Diplomado/Modulo_1/Proyecto_M1_P1/colaboracion-git-equipo-11/Data")
-#setwd("/Users/bryantcanseco/Desktop/UNAM/Diplomados/Ciencia de Datos- UNAM/colaboracion-git-equipo-11/Data")
+setwd("/Users/bryantcanseco/Desktop/UNAM/Diplomados/Ciencia de Datos- UNAM/diplo-modulo2-equipo-11/Data")
 
 ```
 
 
 
 ```{r Data}
-setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
+#setwd("C:/Users/ferna/Documents/Proyectos_Diplomado/diplo-modulo2-equipo-11/Data")
+setwd("/Users/bryantcanseco/Desktop/UNAM/Diplomados/Ciencia de Datos- UNAM/diplo-modulo2-equipo-11/Data")
 conn <- DBI::dbConnect(RSQLite::SQLite(), "vuelos.db")
 
 ```
+
 
 ```{r ExploracionBaseDatos}
 
